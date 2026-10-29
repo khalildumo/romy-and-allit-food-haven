@@ -1,7 +1,8 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "framework": null,
-    "buildCommand": "npm run build",
+    "installCommand": "env -u npm_config_cache_dir -u NPM_CONFIG_CACHE_DIR npm install --legacy-peer-deps --no-audit",
+    "buildCommand": "env -u npm_config_cache_dir -u NPM_CONFIG_CACHE_DIR npm run build",
     "outputDirectory": "public",
     "functions": {
         "api/index.php": {
