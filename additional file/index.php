@@ -1,0 +1,441 @@
+
+<?php
+require __DIR__ . '/db.php';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+if (!function_exists('e')) {
+    function e(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+$menuProducts = $pdo->query("SELECT id, name, category, description, price, image_path, stock_quantity, stock_enabled FROM menu_products WHERE is_available = 1 ORDER BY FIELD(category, 'mains', 'breakfast', 'snacks', 'drinks'), name")->fetchAll();
+$menuCategories = $pdo->query("SELECT name FROM product_categories ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+$categoryLabels = ['mains' => 'Dishes', 'breakfast' => 'Breakfast', 'snacks' => 'Snacks', 'drinks' => 'Drinks'];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Romy and Allit Food Haven — Good food, good mood.</title>
+
+    <meta name="description" content="Romy and Allit Food Haven serves Filipino favorites, fresh meals, and drinks for the ISPSC Tagudin Campus community.">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="announcement">
+        <span>✦</span>
+        Lunchtime made easy — order ahead and skip the queue
+        <a href="#menu">
+            Explore today's menu <span>→</span>
+        </a>
+    </div>
+
+    <header class="site-header">
+
+        <a class="brand" href="#top">Romy and Allit Food Haven</a>
+
+        <nav class="desktop-nav" aria-label="Main navigation">
+            <a class="active" href="#top">Home</a>
+            <a href="#menu">Our menu</a>
+            <a href="#story">Our story</a>
+            <a href="#contact">Find us</a>
+            <?php if (!empty($_SESSION['user'])): ?>
+                <span>Hi, <?= e((string) $_SESSION['user']['full_name']) ?></span>
+                <a href="my_orders.php">My orders</a>
+                <a href="logout.php">Log out</a>
+            <?php else: ?>
+                <a href="login.php">Log in</a>
+            <?php endif; ?>
+        </nav>
+
+        <div class="header-actions">
+            <button
+                class="cart-button"
+                id="cartButton"
+                type="button"
+                aria-label="Open cart"
+            >
+                <span class="cart-icon">♧</span>
+                Cart <b id="cartCount">0</b>
+            </button>
+
+            <button
+                class="menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-label="Open menu"
+            >
+                ☰
+            </button>
+        </div>
+
+    </header>
+
+    <main id="top">
+
+        <!-- HERO SECTION -->
+        <section class="hero section-wrap">
+
+            <div class="hero-copy">
+
+                <p class="eyebrow">
+                    <span></span> Your neighborhood favorite
+                </p>
+
+                <h1>
+                    Romy and Allit<br>
+                    <em>Food Haven</em>
+                </h1>
+
+                <p class="hero-text">
+                    Familiar Filipino comfort food and Miki Abra made with the kind
+                    of care that feels like home. Fresh every day,
+                    always worth the little detour.
+                </p>
+
+                <div class="hero-actions">
+                    <a class="button primary" href="#menu">
+                        See what's cooking <span>→</span>
+                    </a>
+
+                    <a class="text-link" href="#story">
+                        Our story <span>↗</span>
+                    </a>
+                </div>
+
+                <div class="hero-meta">
+                    <div>
+                        <strong>4.9/5</strong>
+                        <span>from our regulars</span>
+                    </div>
+
+                    <div class="meta-divider"></div>
+
+                    <div>
+                        <strong>6:00–17:00</strong>
+                        <span>Mon – Sat</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="hero-visual">
+
+                <div class="hero-image">
+                    <img
+                        src="Dishes/Pork%20Adobo.jpeg"
+                        alt="Pork adobo"
+                    >
+
+                    <span class="image-sticker">
+                        Made with<br>love <i>♥</i>
+                    </span>
+                </div>
+
+                <div class="floating-note">
+                    <span>Today's special</span>
+                    <strong>Chicken Adobo<br></strong>
+                    <b>₱30</b>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- MARQUEE -->
+        <section class="marquee">
+            <div>
+                FRESHLY COOKED <span>✳</span>
+                LOCALLY LOVED <span>✳</span>
+                ALWAYS COMFORTING <span>✳</span>
+                FRESHLY COOKED <span>✳</span>
+                LOCALLY LOVED <span>✳</span>
+            </div>
+        </section>
+
+        <!-- MENU SECTION -->
+        <section class="menu-section section-wrap" id="menu">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">
+                        <span></span> What's on the table
+                    </p>
+
+                    <h2>
+                        A little bit of <em>everything good.</em>
+                    </h2>
+                </div>
+
+                <a class="text-link" href="#menu">
+                    View all items <span>→</span>
+                </a>
+            </div>
+
+            <div class="category-tabs" role="tablist">
+                <button class="active" data-category="all" type="button">
+                    All day favorites
+                </button>
+
+                <?php foreach ($menuCategories as $category): ?>
+                    <button data-category="<?= e($category) ?>" type="button">
+                        <?= e($categoryLabels[$category] ?? ucfirst($category)) ?>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+
+            <input class="menu-search" id="menuSearch" type="search" placeholder="Search menu items..." aria-label="Search menu items">
+
+            <div class="menu-grid" id="menuGrid">
+                <?php foreach ($menuProducts as $product): ?>
+                    <article class="menu-card" data-category="<?= e($product['category']) ?>">
+                        <div class="card-image">
+                            <?php if ($product['image_path'] !== ''): ?>
+                                <img src="<?= e(str_replace(' ', '%20', $product['image_path'])) ?>" alt="<?= e($product['name']) ?>" loading="lazy">
+                            <?php endif; ?>
+                            <?php $inStock = (int) $product['stock_enabled'] !== 1 || (int) $product['stock_quantity'] > 0; ?>
+                            <button class="add-button" data-id="<?= (int) $product['id'] ?>" data-name="<?= e($product['name']) ?>" data-price="<?= e((string) $product['price']) ?>" type="button" <?= $inStock ? '' : 'disabled' ?> aria-label="<?= $inStock ? 'Add ' . e($product['name']) . ' to cart' : e($product['name']) . ' is out of stock' ?>">+</button>
+                        </div>
+                        <div class="card-info">
+                            <div><h3><?= e($product['name']) ?></h3><p><?= e($product['description']) ?></p><span class="stock-tag <?= $inStock ? '' : 'out' ?>"><?= $inStock ? ((int) $product['stock_enabled'] === 1 ? (int) $product['stock_quantity'] . ' available' : 'In stock') : 'Out of stock' ?></span></div>
+                            <strong>₱<?= number_format((float) $product['price'], 2) ?></strong>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+                <?php if (!$menuProducts): ?><p>Our menu is being updated. Please check back soon.</p><?php endif; ?>
+            </div>
+        </section>
+
+        <section class="story section-wrap" id="story">
+
+            <div class="story-image">
+                <img
+                    src="Story/Warm%20and%20inviting%20canteen%20interior.jpeg"
+                    alt="Warm and inviting canteen interior"
+                >
+            </div>
+
+            <div class="story-copy">
+                <p class="eyebrow">
+                    <span></span> A seat at our table
+                </p>
+
+                <h2>
+                    From our family<br>
+                    to <em>your everyday.</em>
+                </h2>
+
+                <p>
+                    Romy and Allit Food Haven started with a simple idea:
+                    the best meals don't need to be complicated. Just
+                    honest ingredients, generous portions, and a place
+                    where everybody knows your usual.
+                </p>
+
+                <a class="button dark" href="#contact">
+                    Come say hello <span>↗</span>
+                </a>
+            </div>
+
+        </section>
+
+        <!-- CUSTOMER QUOTE -->
+        <section class="quote-section">
+            <p class="quote-mark">“</p>
+
+            <blockquote>
+                It tastes like the kind of meal you didn't know you needed.
+            </blockquote>
+
+            <p class="quote-by">
+                — MARIA S. <span>·</span> happy regular since 2021
+            </p>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="contact section-wrap" id="contact">
+
+            <div>
+                <p class="eyebrow">
+                    <span></span> Find your way to us
+                </p>
+
+                <h2>See you <em>soon?</em></h2>
+            </div>
+
+            <div class="contact-details">
+                <p>
+                    <strong>Romy and Allit Food Haven</strong><br>
+                    ISPSC Tagudin Campus
+                </p>
+
+                <p>
+                    <strong>Open Monday – Saturday</strong><br>
+                    6:00 AM — 5:00 PM<br>
+                    <a href="tel:+639171234567">+63 917 123 4567</a>
+                </p>
+            </div>
+
+            <a
+                class="button primary"
+                href="https://maps.google.com/?q=ISPSC+Tagudin+Campus"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Get directions <span>↗</span>
+            </a>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+
+        <a class="brand" href="#top">Romy and Allit Food Haven</a>
+        <p>Good food, good mood.</p>
+
+    </footer>
+
+    <!-- CART DRAWER -->
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+
+        <div class="drawer-head">
+            <h2>Your order</h2>
+
+            <button id="closeCart" type="button" aria-label="Close cart">
+                ×
+            </button>
+        </div>
+
+        <div id="cartItems" class="cart-items">
+            <div class="empty-cart">
+                <span>✦</span>
+                <p>
+                    Your order is waiting<br>
+                    for something delicious.
+                </p>
+            </div>
+        </div>
+
+        <div class="cart-footer">
+            <div>
+                <span>Total</span>
+                <strong id="cartTotal">₱0</strong>
+            </div>
+
+            <button class="button dark checkout-button" type="button">
+                Checkout <span>→</span>
+            </button>
+        </div>
+
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="item-modal" id="itemModal" aria-hidden="true">
+        <article class="item-card">
+            <header><h2 id="itemModalName"></h2><button id="closeItemModal" type="button" aria-label="Close item details">×</button></header>
+            <p id="itemModalDescription"></p><p class="item-price" id="itemModalPrice"></p><p id="itemModalStock"></p>
+        </article>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div class="checkout-modal" id="checkoutModal" aria-hidden="true">
+
+        <div class="checkout-card">
+
+            <div class="drawer-head" id="checkoutHeader">
+                <h2>Complete your order</h2>
+
+                <button
+                    id="closeCheckout"
+                    type="button"
+                    aria-label="Close checkout"
+                >
+                    ×
+                </button>
+            </div>
+
+            <form id="checkoutForm">
+
+                <label>
+                    Student name
+                    <input
+                        name="student_name"
+                        required
+                        autocomplete="name"
+                        placeholder="Enter your full name"
+                    >
+                </label>
+
+                <fieldset>
+                    <legend>Fulfillment</legend>
+                    <label class="payment-option"><input type="radio" name="fulfillment_type" value="pickup" checked><span><strong>Pick-up at counter</strong><small>Collect your order from the canteen counter</small></span></label>
+                    <label class="payment-option"><input type="radio" name="fulfillment_type" value="dine_in"><span><strong>Dine-in</strong><small>Enjoy your order at the canteen</small></span></label>
+                </fieldset>
+
+                <label>
+                    Preferred pickup / preparation time
+                    <input name="preferred_time" type="time">
+                </label>
+
+                <label>
+                    Special instructions <small>(optional)</small>
+                    <textarea name="special_instructions" maxlength="500" placeholder="No mayonnaise, extra sauce, etc."></textarea>
+                </label>
+
+                <fieldset>
+                    <legend>Payment method</legend>
+
+                    <label class="payment-option" data-account="">
+                        <input
+                            type="radio"
+                            name="payment_method"
+                            value="cash"
+                            checked
+                        >
+                        <span>
+                            <strong>Cash</strong>
+                            <small>Pay when you pick up your order</small>
+                        </span>
+                    </label>
+
+                    <label class="payment-option" data-account="09955155092">
+                        <input type="radio" name="payment_method" value="gcash">
+                        <span><strong>GCash</strong><small>Scan the QR code and confirm payment</small></span>
+                    </label>
+
+                </fieldset>
+
+                <div class="payment-qr" id="paymentQr" hidden></div>
+
+                <p class="checkout-error" id="checkoutError" role="alert" aria-live="polite"></p>
+
+                <button
+                    class="button dark"
+                    type="submit"
+                    id="confirmPayment"
+                >
+                    Place order <span>→</span>
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="checkout-card receipt" id="receipt" hidden></div>
+
+    </div>
+
+    <script src="checkout.js"></script>
+
+</body>
+</html>
