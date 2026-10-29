@@ -25,9 +25,17 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "false",
+        "DB_CONNECTION": "mysql",
+        "DB_PORT": "3306",
+        "DB_CHARSET": "utf8mb4",
+        "DB_COLLATION": "utf8mb4_unicode_ci",
         "SESSION_DRIVER": "cookie",
         "CACHE_STORE": "array",
         "QUEUE_CONNECTION": "sync",
-        "LOG_CHANNEL": "stderr"
+        "LOG_CHANNEL": "stderr",
+        "MAIL_MAILER": "smtp",
+        "MAIL_SCHEME": "smtp",
+        "MAIL_HOST": "smtp.gmail.com",
+        "MAIL_PORT": "587"
     }
 }
