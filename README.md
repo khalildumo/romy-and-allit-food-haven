@@ -2,6 +2,12 @@
 
 Laravel application for the canteen storefront, customer accounts and order tracking, checkout, and admin tools. The original procedural PHP files remain in `additional file/` as source reference; the Laravel routes do not execute those standalone scripts.
 
+## Render deployment
+
+Deploy this PHP application as a Docker web service using the included `Dockerfile` and `render.yaml`. The Docker image starts Apache on Render's `PORT`; it does not use `npm start`.
+
+Create a Render Blueprint from this repository, then provide the variables marked `sync: false`, including `APP_KEY`, `APP_URL`, the production MySQL connection, and Gmail SMTP credentials. `DB_HOST` must point to a MySQL server reachable from Render; the local XAMPP database is not reachable there. After connecting the database, run `php artisan migrate --seed --force` once from the service shell. Uploaded product images need persistent or object storage because the container's local filesystem is temporary.
+
 ## Local setup
 
 1. Install PHP dependencies and create the environment file:
