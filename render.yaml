@@ -4,6 +4,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
+    dockerCommand: apache2-foreground
     healthCheckPath: /up
     envVars:
       - key: APP_ENV
