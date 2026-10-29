@@ -17,10 +17,10 @@
 <main>
     <h1>One setup step is still needed.</h1>
     @if ($issue === 'app-key')
-        <p>Laravel is missing its encryption key. Add <code>APP_KEY</code> to the Vercel project's Environment Variables, then redeploy.</p>
+        <p>Laravel is missing its encryption key. Add <code>APP_KEY</code> to the Render service's Environment Variables, then redeploy.</p>
     @else
-        <p>Laravel could not read its database. In Vercel's Environment Variables, set <code>DB_HOST</code>, <code>DB_DATABASE</code>, <code>DB_USERNAME</code>, and <code>DB_PASSWORD</code> for a MySQL database that Vercel can reach.</p>
-        <p>Then run the project migrations against that database. A local XAMPP database at <code>localhost</code> is not reachable from Vercel.</p>
+        <p>Laravel could not read its database. In the Render service's Environment Variables, set <code>DB_HOST</code>, <code>DB_DATABASE</code>, <code>DB_USERNAME</code>, and <code>DB_PASSWORD</code> for a MySQL database that Render can reach.</p>
+        <p>Then run the project migrations against that database. A local XAMPP database at <code>localhost</code> is not reachable from Render.</p>
     @endif
 </main>
 </body>
