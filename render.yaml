@@ -12,7 +12,7 @@ services:
       - key: APP_DEBUG
         value: "false"
       - key: APP_KEY
-        sync: false
+        generateValue: true
       - key: APP_URL
         sync: false
       - key: DB_CONNECTION
