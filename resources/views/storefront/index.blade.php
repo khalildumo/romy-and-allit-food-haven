@@ -121,6 +121,13 @@
         </div>
         <a class="button primary" href="https://maps.google.com/?q=ISPSC+Tagudin+Campus" target="_blank" rel="noopener noreferrer">Get directions <span>↗</span></a>
     </section>
+    <section class="todos-section section-wrap" aria-labelledby="todosHeading">
+        <div class="section-heading">
+            <div><p class="eyebrow"><span></span> Supabase demo</p><h2 id="todosHeading">Todo <em>list.</em></h2></div>
+        </div>
+        <p class="todo-status" id="todoStatus" role="status" aria-live="polite">Loading todos...</p>
+        <ul class="todo-list" id="todoList" aria-label="Todos"></ul>
+    </section>
 </main>
 <footer class="site-footer"><a class="brand" href="#top">Romy and Allit Food Haven</a><p>Good food, good mood.</p></footer>
 
@@ -159,6 +166,7 @@
 @endsection
 
 @push('scripts')
+@vite('resources/js/app.js')
 <script src="{{ asset('assets/checkout.js') }}" defer></script>
 <script src="{{ asset('assets/site.js') }}" defer></script>
 @endpush
