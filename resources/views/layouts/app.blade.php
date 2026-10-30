@@ -7,6 +7,7 @@
     <title>@yield('title', 'Romy and Allit Food Haven')</title>
     <link rel="stylesheet" href="{{ asset('assets/styles.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/app.css') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
 <body class="@yield('body-class')">
