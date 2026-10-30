@@ -7,6 +7,7 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/up', fn () => response()->noContent())->name('health');
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 Route::get('/send-otp', [OtpController::class, 'showSend'])->name('otp.send');

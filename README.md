@@ -4,9 +4,13 @@ Laravel application for the canteen storefront, customer accounts and order trac
 
 ## Render deployment
 
-Deploy this PHP application as a Docker web service using the included `Dockerfile` and `render.yaml`. The Docker image starts Apache on Render's `PORT`; it does not use `npm start`.
+Deploy this PHP application as a Docker web service using the included `Dockerfile` and `render.yaml`. The image builds Vite assets, enables both MySQL and PostgreSQL PDO drivers, and starts Apache on Render's `PORT`. The `/up` health endpoint confirms the web process is responding without requiring a database connection.
 
-Create a Render Blueprint from this repository. Render generates and stores `APP_KEY`; provide the variables marked `sync: false`, including `APP_URL`, the production MySQL connection, and Gmail SMTP credentials. The Blueprint configures cookie-backed sessions, so do not override `SESSION_DRIVER` with `database`. `DB_HOST` must point to a MySQL server reachable from Render; the local XAMPP database is not reachable there. After connecting the database, run `php artisan migrate --seed --force` once from the service shell. Uploaded product images need persistent or object storage because the container's local filesystem is temporary.
+Create a Render Blueprint from this repository in the Singapore region (or choose a region close to your users and Supabase project). Review the Blueprint's generated `APP_KEY`, and enter the variables marked `sync: false` in the Render dashboard. For Supabase, use the **Session Pooler** host, port, and username shown in the project's Connect dialog; use database `postgres` and set `DB_SSLMODE=require`. Production selects PostgreSQL while the local `.env` continues selecting XAMPP MySQL. Do not substitute the Supabase direct connection or transaction pooler without checking compatibility with the app's IPv4 and session requirements.
+
+The container intentionally does **not** migrate or seed the database at startup. Before any schema migration, back up the Supabase database, compare its schema and data with the local database, review the migration plan, and get approval. The migrations in this repository create a new Laravel schema; they do not import existing MySQL records. Do not run `migrate:fresh`, `db:wipe`, or reset commands. After approval, run reviewed migrations manually from the Render shell with `php artisan migrate --force`; run seeders only if separately reviewed, since they create starter menu and optional administrator records. Uploaded product images are written to the public disk, and local container storage is temporary; configure a persistent disk or object storage before relying on uploads in production.
+
+Render variables include `APP_NAME`, `APP_ENV`, `APP_DEBUG`, generated `APP_KEY`, `APP_URL`, `LOG_CHANNEL`, `LOG_LEVEL`, `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSLMODE`, `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION`, `FILESYSTEM_DISK`, and SMTP settings. Add any administrator seed credentials only for an explicitly approved seed operation; do not set them preemptively.
 
 ## Vercel deployment
 
