@@ -29,7 +29,7 @@ return new class extends Migration
         });
 
         Schema::create('canteen_profile', function (Blueprint $table) {
-            $table->unsignedTinyInteger('id')->primary();
+            $table->smallInteger('id')->primary();
             $table->string('canteen_name', 160)->default('Romy and Allit Food Haven');
             $table->string('operating_hours', 160)->default('Monday - Saturday, 6:00 AM - 5:00 PM');
             $table->string('contact_info')->default('');

@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim AS frontend
 
 WORKDIR /app
-COPY package.json package-lock.json .npmrc ./
+COPY package.json package-lock.json ./
 RUN unset npm_config_cache_dir NPM_CONFIG_CACHE_DIR && npm ci --legacy-peer-deps --no-audit
 COPY . .
 RUN unset npm_config_cache_dir NPM_CONFIG_CACHE_DIR && npm run build
@@ -21,6 +21,7 @@ WORKDIR /var/www/html
 COPY . .
 
 RUN mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app/public \
+    && rm -f bootstrap/cache/packages.php \
     && composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader \
     && php artisan package:discover --ansi \
     && chown -R www-data:www-data bootstrap/cache storage
