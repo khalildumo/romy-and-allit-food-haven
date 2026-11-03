@@ -46,7 +46,7 @@ Vercel runs Laravel through the PHP function configured in `vercel.json`; deploy
 
    An administrator is created only when both `ADMIN_USERNAME` and `ADMIN_PASSWORD` are set. Do not use a default or shared password.
 
-4. Configure outgoing mail in `.env` to enable registration verification and password resets. Set `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME`. The default `log` mailer is for local development only.
+4. Configure outgoing mail in `.env` to enable registration verification and password resets. Set `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME`. For Gmail, use a Google App Password for `MAIL_PASSWORD`; `MAIL_FROM_ADDRESS` must be the authenticated Gmail address or a verified Gmail send-as alias. Set `APP_URL` to the public HTTPS address so password reset links point to the deployed site. Apply the same settings in the deployment environment and restart/redeploy after changing them. The default `log` mailer is for local development only.
 
 5. Point the web server document root to this project's `public/` directory, then run the app with your normal Laravel/PHP development server.
 

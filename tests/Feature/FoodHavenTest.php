@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Models\MenuProduct;
 use App\Models\EmailOtp;
 use App\Models\EmailVerificationCode;
+use App\Models\MenuProduct;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class FoodHavenTest extends TestCase
@@ -100,6 +102,26 @@ class FoodHavenTest extends TestCase
 
         $this->assertNotNull($otp->fresh()->used_at);
         $this->get('/otp-success')->assertOk()->assertSee('guest@example.com');
+    }
+
+    public function test_forgot_password_sends_a_reset_link_notification_to_the_account_email(): void
+    {
+        $user = User::factory()->create(['email' => 'customer@example.com']);
+        Notification::fake();
+
+        $this->from('/forgot-password')
+            ->post('/forgot-password', ['email' => $user->email])
+            ->assertRedirect('/forgot-password')
+            ->assertSessionHas('status');
+
+        Notification::assertSentTo(
+            $user,
+            ResetPassword::class,
+            fn (ResetPassword $notification): bool => str_contains(
+                $notification->toMail($user)->actionUrl,
+                '/reset-password/'.$notification->token,
+            ),
+        );
     }
 
     public function test_checkout_uses_database_prices_and_decrements_limited_stock(): void
