@@ -15,7 +15,6 @@ class GoogleOAuthController extends Controller
     private function googleClient(): Client
     {
         $client = new Client();
-
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setRedirectUri(config('services.google.redirect_uri'));
@@ -29,7 +28,6 @@ class GoogleOAuthController extends Controller
     public function redirect(Request $request): RedirectResponse
     {
         $state = Str::random(40);
-
         $request->session()->put('google_oauth_state', $state);
 
         $client = $this->googleClient();
