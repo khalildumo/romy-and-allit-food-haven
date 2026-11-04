@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleOAuthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\StorefrontController;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/up', fn () => response()->noContent())->name('health');
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+
 Route::get('/send-otp', [OtpController::class, 'showSend'])->name('otp.send');
 Route::post('/send-otp', [OtpController::class, 'send'])->middleware('throttle:5,1')->name('otp.send.store');
 Route::get('/verify-otp', [OtpController::class, 'showVerify'])->name('otp.verify');
@@ -33,6 +35,16 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/my-orders', [OrderController::class, 'index'])->middleware('auth')->name('orders.index');
 
+// Google OAuth routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/oauth/google', [GoogleOAuthController::class, 'redirect'])
+        ->name('google.oauth.redirect');
+
+    Route::get('/oauth/google/callback', [GoogleOAuthController::class, 'callback'])
+        ->name('google.oauth.callback');
+});
+
+// Admin routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::patch('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.status');
