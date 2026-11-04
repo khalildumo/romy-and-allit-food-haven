@@ -9,7 +9,7 @@ RUN unset npm_config_cache_dir NPM_CONFIG_CACHE_DIR && npm run build
 FROM php:8.4-apache
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libfreetype6-dev libjpeg62-turbo-dev libonig-dev libpng-dev libpq-dev libxml2-dev libzip-dev unzip \
+    && apt-get install -y --no-install-recommends ca-certificates libfreetype6-dev libjpeg62-turbo-dev libonig-dev libpng-dev libpq-dev libxml2-dev libzip-dev unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" bcmath exif gd mbstring opcache pdo_mysql pdo_pgsql xml zip \
     && a2enmod rewrite headers \
