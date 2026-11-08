@@ -4,9 +4,9 @@
 @section('content')
 <main class="account-card">
     <a class="brand" href="{{ route('home') }}">Romy and Allit Food Haven</a>
-    <p class="eyebrow"><span></span> Customer portal</p>
+    <p class="eyebrow"><span></span> Account portal</p>
     <h1>Welcome back.</h1>
-    <p class="account-intro">Log in to continue to your Romy and Allit Food Haven account.</p>
+    <p class="account-intro">Log in to continue to your Romy and Allit Food Haven account. Staff can use their assigned username and password.</p>
     @if (session('status'))<p class="account-success">{{ session('status') }}</p>@endif
     @if ($errors->any())<p class="account-message">{{ $errors->first() }}</p>@endif
     <form method="post" action="{{ route('login.store') }}" class="account-form" autocomplete="on">

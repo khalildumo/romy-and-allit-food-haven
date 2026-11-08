@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashierController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\StorefrontController;
@@ -33,6 +34,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/my-orders', [OrderController::class, 'index'])->middleware('auth')->name('orders.index');
+
+Route::prefix('cashier')->name('cashier.')->middleware(['auth', 'cashier'])->group(function () {
+    Route::get('/', [CashierController::class, 'dashboard'])->name('dashboard');
+    Route::patch('/orders/{order}/status', [CashierController::class, 'updateOrderStatus'])->name('orders.status');
+    Route::patch('/orders/{order}/payment', [CashierController::class, 'verifyPayment'])->name('orders.payment');
+});
 
 
 // Admin routes

@@ -30,7 +30,7 @@
             <thead><tr><th>Image</th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Availability</th><th>Actions</th></tr></thead>
             <tbody>
             @forelse ($products as $product)
-                @php($imageUrl = $product->image_path === '' ? '' : (str_starts_with($product->image_path, 'products/') ? asset('storage/'.$product->image_path) : asset(str_starts_with($product->image_path, 'assets/') ? $product->image_path : 'assets/'.$product->image_path)))
+                @php($imageUrl = $product->imageUrl())
                 <tr>
                     <td>@if ($imageUrl)<img src="{{ $imageUrl }}" alt="" width="56" height="56" style="object-fit:cover;border-radius:5px">@else — @endif</td>
                     <td>{{ $product->name }}</td><td>{{ ucfirst($product->category) }}</td><td>₱{{ number_format((float) $product->price, 2) }}</td>

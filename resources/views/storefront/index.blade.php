@@ -77,10 +77,10 @@
         <div class="menu-grid" id="menuGrid">
             @forelse ($products as $product)
                 @php($inStock = ! $product->stock_enabled || $product->stock_quantity > 0)
-                @php($imageUrl = $product->image_path === '' ? '' : (str_starts_with($product->image_path, 'products/') ? asset('storage/'.$product->image_path) : asset(str_starts_with($product->image_path, 'assets/') ? $product->image_path : 'assets/'.$product->image_path)))
+                @php($imageUrl = $product->imageUrl())
                 <article class="menu-card" data-category="{{ $product->category }}">
                     <div class="card-image">
-                        @if ($imageUrl !== '')
+                        @if ($imageUrl)
                             <img src="{{ $imageUrl }}" alt="{{ $product->name }}" loading="lazy">
                         @endif
                         <button class="add-button" data-id="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" type="button" @disabled(! $inStock) aria-label="{{ $inStock ? 'Add '.$product->name.' to cart' : $product->name.' is out of stock' }}">+</button>
@@ -125,8 +125,6 @@
         <div class="section-heading">
             <div><p class="eyebrow"><span></span> Supabase demo</p><h2 id="todosHeading">Todo <em>list.</em></h2></div>
         </div>
-        <p class="todo-status" id="todoStatus" role="status" aria-live="polite">Loading todos...</p>
-        <ul class="todo-list" id="todoList" aria-label="Todos"></ul>
     </section>
 </main>
 <footer class="site-footer"><a class="brand" href="#top">Romy and Allit Food Haven</a><p>Good food, good mood.</p></footer>

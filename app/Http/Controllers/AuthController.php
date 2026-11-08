@@ -32,20 +32,33 @@ class AuthController extends Controller
         ]);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['username' => 'Invalid username or password.'])->onlyInput('username');
+            return back()->withErrors([
+                'username' => 'Invalid username or password.',
+            ])->onlyInput('username');
         }
 
         $request->session()->regenerate();
 
         if (! $request->user()->email_verified && $request->user()->email !== '') {
             $userId = $request->user()->id;
+
             Auth::logout();
-            $request->session()->put('pending_email_verification_user_id', $userId);
+
+            $request->session()->put(
+                'pending_email_verification_user_id',
+                $userId
+            );
 
             return redirect()->route('verification.notice');
         }
 
-        return redirect()->intended($request->user()->role === 'admin' ? route('admin.dashboard') : route('home'));
+        return redirect()->intended(
+            match ($request->user()->role) {
+                'admin' => route('admin.dashboard'),
+                'cashier' => route('cashier.dashboard'),
+                default => route('home'),
+            }
+        );
     }
 
     public function showRegister(): View
@@ -57,11 +70,21 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
-            'username' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9_.-]+$/', 'unique:users,username'],
+            'username' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Za-z0-9_.-]+$/',
+                'unique:users,username',
+            ],
             'institution_id' => ['required', 'string', 'max:80'],
             'email' => ['required', 'email', 'max:160', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:40'],
-            'password' => ['required', 'confirmed', PasswordRule::min(8)],
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8),
+            ],
         ]);
 
         [$user, $code] = DB::transaction(function () use ($validated): array {
@@ -75,7 +98,9 @@ class AuthController extends Controller
                 'role' => 'customer',
                 'email_verified' => false,
             ]);
+
             $code = (string) random_int(100000, 999999);
+
             EmailVerificationCode::query()->create([
                 'user_id' => $user->id,
                 'code_hash' => Hash::make($code),
@@ -85,26 +110,35 @@ class AuthController extends Controller
             return [$user, $code];
         });
 
-        $request->session()->put('pending_email_verification_user_id', $user->id);
+        $request->session()->put(
+            'pending_email_verification_user_id',
+            $user->id
+        );
+
         $sent = $this->sendVerificationCode($user, $code);
 
         return redirect()->route('verification.notice')->with(
-            'notice',
+            $sent ? 'notice' : 'error',
             $sent
-                ? 'A verification code was sent to your email.'
+                ? 'A verification code was sent to your Gmail. Check your inbox and spam folder.'
                 : 'Your account was created, but the verification email could not be sent. Check mail settings and request another code.',
         );
     }
 
     public function showVerification(Request $request): View|RedirectResponse
     {
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user) {
             return redirect()->route('register');
         }
 
         if ($user->email_verified) {
-            $request->session()->forget('pending_email_verification_user_id');
+            $request->session()->forget(
+                'pending_email_verification_user_id'
+            );
 
             return redirect()->route('login');
         }
@@ -114,15 +148,29 @@ class AuthController extends Controller
 
     public function verifyEmail(Request $request): RedirectResponse
     {
-        $validated = $request->validate(['code' => ['required', 'digits:6']]);
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $validated = $request->validate([
+            'code' => ['required', 'digits:6'],
+        ]);
+
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user) {
             return redirect()->route('register');
         }
 
         $result = DB::transaction(function () use ($user, $validated): string {
-            $record = EmailVerificationCode::query()->whereKey($user->id)->lockForUpdate()->first();
-            if (! $record || $record->expires_at->isPast() || $record->attempts >= 5) {
+            $record = EmailVerificationCode::query()
+                ->whereKey($user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $record ||
+                $record->expires_at->isPast() ||
+                $record->attempts >= 5
+            ) {
                 return 'expired';
             }
 
@@ -132,7 +180,10 @@ class AuthController extends Controller
                 return 'incorrect';
             }
 
-            $user->forceFill(['email_verified' => true])->save();
+            $user->forceFill([
+                'email_verified' => true,
+            ])->save();
+
             $record->delete();
 
             return 'verified';
@@ -143,38 +194,61 @@ class AuthController extends Controller
                 ? 'That code is incorrect. Please check your email and try again.'
                 : 'That code is invalid or expired. Request a new code and try again.';
 
-            return back()->withErrors(['code' => $message]);
+            return back()->withErrors([
+                'code' => $message,
+            ]);
         }
 
-        $request->session()->forget('pending_email_verification_user_id');
+        $request->session()->forget(
+            'pending_email_verification_user_id'
+        );
+
         Auth::login($user);
+
         $request->session()->regenerate();
 
-        return redirect()->route('home')->with('status', 'Your email is verified. Welcome!');
+        return redirect()->route('home')->with(
+            'status',
+            'Your email is verified. Welcome!'
+        );
     }
 
     public function resendVerification(Request $request): RedirectResponse
     {
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user || $user->email_verified) {
             return redirect()->route('register');
         }
 
         $record = EmailVerificationCode::query()->find($user->id);
+
         if ($record && $record->created_at->gt(now()->subMinute())) {
-            return back()->withErrors(['code' => 'Please wait a minute before requesting another code.']);
+            return back()->withErrors([
+                'code' => 'Please wait a minute before requesting another code.',
+            ]);
         }
 
         $code = (string) random_int(100000, 999999);
+
         EmailVerificationCode::query()->updateOrCreate(
             ['user_id' => $user->id],
-            ['code_hash' => Hash::make($code), 'expires_at' => now()->addMinutes(10), 'attempts' => 0],
+            [
+                'code_hash' => Hash::make($code),
+                'expires_at' => now()->addMinutes(10),
+                'attempts' => 0,
+            ],
         );
+
         $sent = $this->sendVerificationCode($user, $code);
 
         return back()->with(
             $sent ? 'notice' : 'error',
-            $sent ? 'A new verification code was sent to your email.' : 'The verification email could not be sent. Check mail settings and try again.',
+            $sent
+                ? 'A new verification code was sent to your email.'
+                : 'The verification email could not be sent. Check mail settings and try again.',
         );
     }
 
@@ -185,15 +259,24 @@ class AuthController extends Controller
 
     public function sendResetLink(Request $request): RedirectResponse
     {
-        $request->validate(['email' => ['required', 'email', 'max:160']]);
+        $request->validate([
+            'email' => ['required', 'email', 'max:160'],
+        ]);
+
         try {
-            $status = Password::sendResetLink(['email' => $request->string('email')->toString()]);
+            $status = Password::sendResetLink([
+                'email' => $request->string('email')->toString(),
+            ]);
         } catch (Throwable $exception) {
-            Log::warning('Password reset email could not be sent.', [
+            Log::error('Password reset email sending failed.', [
                 'exception' => $exception::class,
             ]);
 
-            return back()->with('error', 'We could not send a password reset email right now. Check the email settings and try again.');
+
+            return back()->with(
+                'error',
+                'We could not send a password reset email right now. Check the email settings and try again.'
+            );
         }
 
         return back()->with(
@@ -204,8 +287,10 @@ class AuthController extends Controller
         );
     }
 
-    public function showResetPassword(Request $request, string $token): View
-    {
+    public function showResetPassword(
+        Request $request,
+        string $token
+    ): View {
         return view('auth.reset-password', [
             'token' => $token,
             'email' => $request->query('email', ''),
@@ -217,7 +302,11 @@ class AuthController extends Controller
         $validated = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email', 'max:160'],
-            'password' => ['required', 'confirmed', PasswordRule::min(8)],
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8),
+            ],
         ]);
 
         $status = Password::reset(
@@ -238,29 +327,36 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
     }
 
-    private function sendVerificationCode(User $user, string $code): bool
-    {
+    private function sendVerificationCode(
+        User $user,
+        string $code
+    ): bool {
         try {
             Mail::raw(
                 "Hello {$user->full_name},\n\nYour email verification code is: {$code}\n\nThis code expires in 10 minutes.",
                 function ($message) use ($user): void {
                     $message->to($user->email)
-                        ->subject('Verify your Romy and Allit Food Haven account');
+                        ->subject(
+                            'Verify your Romy and Allit Food Haven account'
+                        );
                 },
             );
 
             return true;
         } catch (Throwable $exception) {
-            Log::warning('Email verification message could not be sent.', [
+            Log::error('Email verification sending failed.', [
                 'user_id' => $user->id,
                 'exception' => $exception::class,
             ]);
+
+            report($exception);
 
             return false;
         }

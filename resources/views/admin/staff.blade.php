@@ -10,7 +10,7 @@
         <form method="post" action="{{ route('admin.staff.create') }}" class="staff-form">@csrf
             <label>Full name<input name="full_name" maxlength="120" required></label>
             <label>Username<input name="username" minlength="3" maxlength="80" pattern="[A-Za-z0-9_.-]+" required></label>
-            <label>Account role<select name="role" required><option value="customer">Staff</option><option value="admin">Administrator</option></select></label>
+            <label>Account role<select name="role" required><option value="cashier">Cashier</option><option value="admin">Administrator</option></select></label>
             <label>Temporary password (12+ characters)<input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
             <button class="button dark" type="submit">Create account</button>
         </form>

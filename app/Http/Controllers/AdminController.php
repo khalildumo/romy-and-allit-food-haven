@@ -181,7 +181,7 @@ class AdminController extends Controller
     public function staff(): View
     {
         return view('admin.staff', [
-            'staff' => User::query()->whereIn('role', ['admin', 'customer'])->orderBy('role')->orderBy('full_name')->get(),
+            'staff' => User::query()->whereIn('role', ['admin', 'cashier'])->orderBy('role')->orderBy('full_name')->get(),
         ]);
     }
 
@@ -190,7 +190,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
             'username' => ['required', 'string', 'min:3', 'max:80', 'regex:/^[A-Za-z0-9_.-]+$/', 'unique:users,username'],
-            'role' => ['required', Rule::in(['admin', 'customer'])],
+            'role' => ['required', Rule::in(['admin', 'cashier'])],
             'password' => ['required', Password::min(12)],
         ]);
         User::query()->create([
@@ -206,7 +206,7 @@ class AdminController extends Controller
 
     public function resetStaffPassword(Request $request, User $user): RedirectResponse
     {
-        abort_unless(in_array($user->role, ['admin', 'customer'], true), 404);
+        abort_unless(in_array($user->role, ['admin', 'cashier'], true), 404);
         $validated = $request->validate([
             'password' => ['required', 'confirmed', Password::min(12)],
         ]);
