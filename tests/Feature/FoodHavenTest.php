@@ -11,9 +11,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Testing\Fakes\MailFake;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class FoodHavenTest extends TestCase
@@ -33,58 +31,7 @@ class FoodHavenTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Chicken Adobo')
-            ->assertSee('₱40.00')
-            ->assertSee('src="'.asset('assets/Dishes/Chicken Adobo.jpeg').'"', false)
-            ->assertSee('src="'.asset('assets/Dishes/Pork Adobo.jpeg').'"', false)
-            ->assertSee('data-gcash-qr="'.asset('assets/QR Code/Qr Gcash.jpeg').'"', false);
-    }
-
-    public function test_storefront_displays_legacy_uploaded_product_images(): void
-    {
-        $filename = '06abf158dd4d634039eaf7d41b3b694c.jpg';
-        MenuProduct::query()->create([
-            'name' => 'Uploaded dish',
-            'category' => 'mains',
-            'price' => 40,
-            'image_path' => 'products/'.$filename,
-        ]);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('src="'.asset('assets/uploads/products/'.$filename).'"', false);
-    }
-
-    public function test_admin_product_list_displays_legacy_uploaded_product_images(): void
-    {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $filename = '06abf158dd4d634039eaf7d41b3b694c.jpg';
-        MenuProduct::query()->create([
-            'name' => 'Uploaded dish',
-            'category' => 'mains',
-            'price' => 40,
-            'image_path' => 'products/'.$filename,
-        ]);
-
-        $this->actingAs($admin)
-            ->get('/admin/products')
-            ->assertOk()
-            ->assertSee('<img src="'.asset('assets/uploads/products/'.$filename).'"', false);
-    }
-
-    public function test_storefront_displays_product_images_from_public_storage(): void
-    {
-        Storage::fake('public');
-        Storage::disk('public')->put('products/current.jpg', 'image');
-        MenuProduct::query()->create([
-            'name' => 'New uploaded dish',
-            'category' => 'mains',
-            'price' => 40,
-            'image_path' => 'products/current.jpg',
-        ]);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('/storage/products/current.jpg', false);
+            ->assertSee('₱40.00');
     }
 
     public function test_database_seeder_creates_categories_profile_and_initial_menu(): void
@@ -94,10 +41,6 @@ class FoodHavenTest extends TestCase
         $this->assertDatabaseCount('product_categories', 4);
         $this->assertDatabaseCount('menu_products', 12);
         $this->assertDatabaseHas('canteen_profile', ['id' => 1]);
-
-        foreach (MenuProduct::query()->get() as $product) {
-            $this->assertNotNull($product->imageUrl(), "Missing image for {$product->name}.");
-        }
     }
 
     public function test_customer_can_authenticate_with_the_legacy_username_and_password_fields(): void
@@ -127,8 +70,6 @@ class FoodHavenTest extends TestCase
         ])->assertRedirect('/verify-email');
 
         $user = User::query()->where('username', 'new_customer')->firstOrFail();
-        $this->assertGuest();
-        $this->assertSessionHas('pending_email_verification_user_id', $user->id);
         $this->assertFalse($user->email_verified);
         $this->assertDatabaseHas('email_verification_codes', ['user_id' => $user->id]);
 

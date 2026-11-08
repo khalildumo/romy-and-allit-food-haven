@@ -60,15 +60,5 @@ class DatabaseSeeder extends Seeder
                 ],
             );
         }
-
-        User::query()->updateOrCreate(
-            ['username' => 'cashier'],
-            [
-                'full_name' => 'Food Haven Cashier',
-                'password_hash' => 'cashier123',
-                'role' => 'cashier',
-                'email_verified' => true,
-            ],
-        );
     }
 }
