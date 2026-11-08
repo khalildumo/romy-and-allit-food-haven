@@ -51,6 +51,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
+        // Require email verification when an email address is registered.
         if (! $user->email_verified && $user->email !== '') {
             $userId = $user->id;
 
@@ -64,15 +65,17 @@ class AuthController extends Controller
             return redirect()->route('verification.notice');
         }
 
+        // Record successful administrator login.
         if ($user->role === 'admin') {
             $this->recordAdminLogin($request, $user, 'success');
         }
 
-        return redirect()->intended(
-            $user->role === 'admin'
-                ? route('admin.dashboard')
-                : route('home')
-        );
+        // Redirect users according to their account role.
+        return redirect()->intended(match ($user->role) {
+            'admin' => route('admin.dashboard'),
+            'cashier' => route('cashier.dashboard'),
+            default => route('home'),
+        });
     }
 
     private function recordAdminLogin(
@@ -138,7 +141,13 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
-            'username' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9_.-]+$/', 'unique:users,username'],
+            'username' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Za-z0-9\_.-]+$/',
+                'unique:users,username',
+            ],
             'institution_id' => ['required', 'string', 'max:80'],
             'email' => ['required', 'email', 'max:160', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:40'],

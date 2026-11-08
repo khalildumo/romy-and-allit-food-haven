@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Foundation\Application;
@@ -7,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Encryption\MissingAppKeyException;
 use Illuminate\Http\Request;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureCashier;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,7 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['admin' => EnsureAdmin::class]);
+        $middleware->alias([
+            'admin' => EnsureAdmin::class,
+            'cashier' => EnsureCashier::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (MissingAppKeyException $exception, Request $request) {

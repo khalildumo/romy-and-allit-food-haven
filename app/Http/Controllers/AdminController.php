@@ -276,17 +276,23 @@ class AdminController extends Controller
         return back()->with('status', 'Customer account deleted.');
     }
 
+    /**
+     * Display admin, staff, and cashier accounts.
+     */
     public function staff(): View
     {
         return view('admin.staff', [
             'staff' => User::query()
-                ->whereIn('role', ['admin', 'customer'])
+                ->whereIn('role', ['admin', 'customer', 'cashier'])
                 ->orderBy('role')
                 ->orderBy('full_name')
                 ->get(),
         ]);
     }
 
+    /**
+     * Create an admin, staff, or cashier account.
+     */
     public function createStaff(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -299,7 +305,7 @@ class AdminController extends Controller
                 'regex:/^[A-Za-z0-9_.-]+$/',
                 'unique:users,username',
             ],
-            'role' => ['required', Rule::in(['admin', 'customer'])],
+            'role' => ['required', Rule::in(['admin', 'customer', 'cashier'])],
             'password' => ['required', Password::min(12)],
         ]);
 
@@ -317,9 +323,17 @@ class AdminController extends Controller
         );
     }
 
-    public function resetStaffPassword(Request $request, User $user): RedirectResponse
-    {
-        abort_unless(in_array($user->role, ['admin', 'customer'], true), 404);
+    /**
+     * Reset an admin, staff, or cashier password.
+     */
+    public function resetStaffPassword(
+        Request $request,
+        User $user
+    ): RedirectResponse {
+        abort_unless(
+            in_array($user->role, ['admin', 'customer', 'cashier'], true),
+            404
+        );
 
         $validated = $request->validate([
             'password' => ['required', 'confirmed', Password::min(12)],

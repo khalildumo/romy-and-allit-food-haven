@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashierController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\StorefrontController;
@@ -83,7 +84,6 @@ Route::prefix('admin')
         Route::patch('/staff/{user}/password', [AdminController::class, 'resetStaffPassword'])
             ->name('staff.password');
 
-        // Admin Login History
         Route::get('/login-history', [AdminController::class, 'loginHistory'])
             ->name('login-history');
 
@@ -94,4 +94,19 @@ Route::prefix('admin')
             ->name('settings.categories.create');
         Route::delete('/settings/categories/{category}', [AdminController::class, 'deleteCategory'])
             ->name('settings.categories.delete');
+    });
+
+// Cashier routes
+Route::prefix('cashier')
+    ->name('cashier.')
+    ->middleware(['auth', 'cashier'])
+    ->group(function () {
+        Route::get('/', [CashierController::class, 'dashboard'])
+            ->name('dashboard');
+
+        Route::patch('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])
+            ->name('orders.status');
+
+        Route::patch('/orders/{order}/payment', [AdminController::class, 'verifyPayment'])
+            ->name('orders.payment');
     });
