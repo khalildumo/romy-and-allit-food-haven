@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmailVerificationCode;
+use App\Models\LoginHistory;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,20 +33,100 @@ class AuthController extends Controller
         ]);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['username' => 'Invalid username or password.'])->onlyInput('username');
+            $admin = User::query()
+                ->where('username', $credentials['username'])
+                ->where('role', 'admin')
+                ->first();
+
+            if ($admin) {
+                $this->recordAdminLogin($request, $admin, 'failed');
+            }
+
+            return back()
+                ->withErrors(['username' => 'Invalid username or password.'])
+                ->onlyInput('username');
         }
 
         $request->session()->regenerate();
 
-        if (! $request->user()->email_verified && $request->user()->email !== '') {
-            $userId = $request->user()->id;
+        $user = $request->user();
+
+        if (! $user->email_verified && $user->email !== '') {
+            $userId = $user->id;
+
             Auth::logout();
-            $request->session()->put('pending_email_verification_user_id', $userId);
+
+            $request->session()->put(
+                'pending_email_verification_user_id',
+                $userId
+            );
 
             return redirect()->route('verification.notice');
         }
 
-        return redirect()->intended($request->user()->role === 'admin' ? route('admin.dashboard') : route('home'));
+        if ($user->role === 'admin') {
+            $this->recordAdminLogin($request, $user, 'success');
+        }
+
+        return redirect()->intended(
+            $user->role === 'admin'
+                ? route('admin.dashboard')
+                : route('home')
+        );
+    }
+
+    private function recordAdminLogin(
+        Request $request,
+        User $user,
+        string $status
+    ): void {
+        try {
+            $agent = $request->userAgent() ?? '';
+
+            // Detect device type.
+            $device = preg_match('/tablet|ipad/i', $agent)
+                ? 'Tablet'
+                : (preg_match('/mobile|android|iphone/i', $agent)
+                    ? 'Mobile'
+                    : 'Desktop');
+
+            // Detect browser.
+            $browser = match (true) {
+                preg_match('/Edg\//i', $agent) === 1 => 'Microsoft Edge',
+                preg_match('/OPR\//i', $agent) === 1 => 'Opera',
+                preg_match('/Chrome\//i', $agent) === 1 => 'Google Chrome',
+                preg_match('/Firefox\//i', $agent) === 1 => 'Mozilla Firefox',
+                preg_match('/Safari\//i', $agent) === 1 => 'Safari',
+                default => 'Unknown',
+            };
+
+            // Detect operating system.
+            $operatingSystem = match (true) {
+                preg_match('/Windows/i', $agent) === 1 => 'Windows',
+                preg_match('/Android/i', $agent) === 1 => 'Android',
+                preg_match('/iPhone|iPad|iPod/i', $agent) === 1 => 'iOS',
+                preg_match('/Mac OS X/i', $agent) === 1 => 'macOS',
+                preg_match('/Linux/i', $agent) === 1 => 'Linux',
+                default => 'Unknown',
+            };
+
+            LoginHistory::create([
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'ip_address' => $request->ip(),
+                'user_agent' => $agent,
+                'device_type' => $device,
+                'browser' => $browser,
+                'operating_system' => $operatingSystem,
+                'status' => $status,
+                'logged_in_at' => now(),
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Admin login history could not be recorded.', [
+                'user_id' => $user->id,
+                'exception' => $exception::class,
+            ]);
+        }
     }
 
     public function showRegister(): View
@@ -75,7 +156,9 @@ class AuthController extends Controller
                 'role' => 'customer',
                 'email_verified' => false,
             ]);
+
             $code = (string) random_int(100000, 999999);
+
             EmailVerificationCode::query()->create([
                 'user_id' => $user->id,
                 'code_hash' => Hash::make($code),
@@ -86,6 +169,7 @@ class AuthController extends Controller
         });
 
         $request->session()->put('pending_email_verification_user_id', $user->id);
+
         $sent = $this->sendVerificationCode($user, $code);
 
         return redirect()->route('verification.notice')->with(
@@ -98,7 +182,10 @@ class AuthController extends Controller
 
     public function showVerification(Request $request): View|RedirectResponse
     {
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user) {
             return redirect()->route('register');
         }
@@ -114,14 +201,24 @@ class AuthController extends Controller
 
     public function verifyEmail(Request $request): RedirectResponse
     {
-        $validated = $request->validate(['code' => ['required', 'digits:6']]);
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $validated = $request->validate([
+            'code' => ['required', 'digits:6'],
+        ]);
+
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user) {
             return redirect()->route('register');
         }
 
         $result = DB::transaction(function () use ($user, $validated): string {
-            $record = EmailVerificationCode::query()->whereKey($user->id)->lockForUpdate()->first();
+            $record = EmailVerificationCode::query()
+                ->whereKey($user->id)
+                ->lockForUpdate()
+                ->first();
+
             if (! $record || $record->expires_at->isPast() || $record->attempts >= 5) {
                 return 'expired';
             }
@@ -147,34 +244,52 @@ class AuthController extends Controller
         }
 
         $request->session()->forget('pending_email_verification_user_id');
+
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('home')->with('status', 'Your email is verified. Welcome!');
+        return redirect()->route('home')->with(
+            'status',
+            'Your email is verified. Welcome!'
+        );
     }
 
     public function resendVerification(Request $request): RedirectResponse
     {
-        $user = User::query()->find($request->session()->get('pending_email_verification_user_id'));
+        $user = User::query()->find(
+            $request->session()->get('pending_email_verification_user_id')
+        );
+
         if (! $user || $user->email_verified) {
             return redirect()->route('register');
         }
 
         $record = EmailVerificationCode::query()->find($user->id);
+
         if ($record && $record->created_at->gt(now()->subMinute())) {
-            return back()->withErrors(['code' => 'Please wait a minute before requesting another code.']);
+            return back()->withErrors([
+                'code' => 'Please wait a minute before requesting another code.',
+            ]);
         }
 
         $code = (string) random_int(100000, 999999);
+
         EmailVerificationCode::query()->updateOrCreate(
             ['user_id' => $user->id],
-            ['code_hash' => Hash::make($code), 'expires_at' => now()->addMinutes(10), 'attempts' => 0],
+            [
+                'code_hash' => Hash::make($code),
+                'expires_at' => now()->addMinutes(10),
+                'attempts' => 0,
+            ],
         );
+
         $sent = $this->sendVerificationCode($user, $code);
 
         return back()->with(
             $sent ? 'notice' : 'error',
-            $sent ? 'A new verification code was sent to your email.' : 'The verification email could not be sent. Check mail settings and try again.',
+            $sent
+                ? 'A new verification code was sent to your email.'
+                : 'The verification email could not be sent. Check mail settings and try again.',
         );
     }
 
@@ -185,15 +300,23 @@ class AuthController extends Controller
 
     public function sendResetLink(Request $request): RedirectResponse
     {
-        $request->validate(['email' => ['required', 'email', 'max:160']]);
+        $request->validate([
+            'email' => ['required', 'email', 'max:160'],
+        ]);
+
         try {
-            $status = Password::sendResetLink(['email' => $request->string('email')->toString()]);
+            $status = Password::sendResetLink([
+                'email' => $request->string('email')->toString(),
+            ]);
         } catch (Throwable $exception) {
             Log::warning('Password reset email could not be sent.', [
                 'exception' => $exception::class,
             ]);
 
-            return back()->with('error', 'We could not send a password reset email right now. Check the email settings and try again.');
+            return back()->with(
+                'error',
+                'We could not send a password reset email right now. Check the email settings and try again.'
+            );
         }
 
         return back()->with(
@@ -238,6 +361,7 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
