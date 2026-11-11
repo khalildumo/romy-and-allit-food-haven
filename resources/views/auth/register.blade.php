@@ -12,9 +12,9 @@
         @csrf
         <label>Full name<input name="full_name" maxlength="120" required autocomplete="name" value="{{ old('full_name') }}"></label>
         <label>Username<input name="username" maxlength="80" pattern="[A-Za-z0-9_.-]+" required autocomplete="username" value="{{ old('username') }}"></label>
-        <label>Institution ID<input name="institution_id" maxlength="80" required value="{{ old('institution_id') }}"></label>
+        <label>Student ID<input name="institution_id" maxlength="80" required value="{{ old('institution_id') }}"></label>
         <label>Email<input type="email" name="email" maxlength="160" required autocomplete="email" value="{{ old('email') }}"></label>
-        <label>Phone<input name="phone" maxlength="40" required autocomplete="tel" value="{{ old('phone') }}"></label>
+        <label>Phone<input name="phone" maxlength="11" required autocomplete="tel" value="{{ old('phone') }}"></label>
         <label>Password<input type="password" name="password" minlength="8" required autocomplete="new-password"></label>
         <label>Confirm password<input type="password" name="password_confirmation" minlength="8" required autocomplete="new-password"></label>
         <button class="button dark" type="submit">Create account <span>→</span></button>
